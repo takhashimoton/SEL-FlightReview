@@ -460,8 +460,6 @@ class StatisticsPlots:
         versions = [] # sorted list of all versions
         for ver in sorted(self._version_data, key=functools.cmp_to_key(_Log.compare_version)):
             versions.append(ver)
-        
-
             # all data points of the requested type for this version
             version_type_data = getattr(self._version_data[ver],
                                         version_attr_name)
