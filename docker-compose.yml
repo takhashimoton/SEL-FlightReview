@@ -16,5 +16,5 @@ services:
       # PORT: "5006"
       # DOMAIN: "test.ru"
     volumes:
-      - ../data:/opt/service/data
-      - ../config_default.ini:/opt/service/config_default.ini:ro
+      - ./data:/opt/service/data
+      - ./app/config_default.ini:/opt/service/config_default.ini:ro

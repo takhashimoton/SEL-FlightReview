@@ -15,7 +15,7 @@ COPY [".", "/opt/service/"]
 
 WORKDIR /opt/service
 EXPOSE 5006
-CMD ["/opt/service/docker/run.sh"]
+CMD ["/opt/service/run.sh"]
 
 ## USAGE
 ## ## ## ## ## ## ## ## ## ## ## ## 
