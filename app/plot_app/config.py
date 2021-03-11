@@ -63,6 +63,8 @@ colors3 = ['#e0212d', '#208900', plot_color_blue]
 colors2 = [colors3[0], colors3[1]] # for data to express: 'what it is' and 'what it should be'
 colors8 = [colors3[0], colors3[1], colors3[2], '#333333', '#999999', '#e58C33',
            '#33e5e5', '#e533e5']
+colors13 = [colors3[0], colors3[1], colors3[2], '#333333', '#999999', '#e58C33',
+           '#33e5e5', '#e533e5','#2413e5', '#75a0e7','#a11325','#144643', '#5353e7','#c21415']
 color_gray = '#464646'
 
 plot_config['mission_setpoint_color'] = colors8[5]

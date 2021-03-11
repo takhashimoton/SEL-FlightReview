@@ -30,7 +30,7 @@ TOOLS = "pan,wheel_zoom,box_zoom,reset,save"
 ACTIVE_SCROLL_TOOLS = "wheel_zoom"
 
 
-def plot_dropouts(p, dropouts, min_value, show_hover_tooltips=False):
+def plot_dropouts(ulog, p, dropouts, min_value, show_hover_tooltips=False):
     """ plot small rectangles with given min_value offset """
 
     if len(dropouts) == 0:
@@ -38,8 +38,8 @@ def plot_dropouts(p, dropouts, min_value, show_hover_tooltips=False):
 
     dropout_dict = {'left': [], 'right': [], 'top': [], 'bottom': [], 'duration' : []}
     for dropout in dropouts:
-        d_start = dropout.timestamp
-        d_end = dropout.timestamp + dropout.duration * 1000
+        d_start = dropout.timestamp - ulog.start_timestamp
+        d_end = dropout.timestamp - ulog.start_timestamp + dropout.duration * 1000
         dropout_dict['left'].append(d_start)
         dropout_dict['right'].append(d_end)
         dropout_dict['top'].append(min_value + dropout.duration * 1000)
@@ -82,7 +82,7 @@ def add_virtual_fifo_topic_data(ulog, topic_name):
                     data_point = cur_dataset.data[axis+'['+str(s)+']'][i] * scale[i]
                     xyz_new[j][sample+s] = data_point
             sample += samples[i]
-        cur_dataset.data['timestamp'] = t_new
+        cur_dataset.data['timestamp'] = t_new - ulog.start_timestamp
         cur_dataset.data['x'] = xyz_new[0]
         cur_dataset.data['y'] = xyz_new[1]
         cur_dataset.data['z'] = xyz_new[2]
@@ -101,7 +101,7 @@ def plot_parameter_changes(p, plots_height, changed_parameters):
     y_values = []
     i = 0
     for timestamp, name, value in changed_parameters:
-        timestamps.append(timestamp)
+        timestamps.append(timestamp - timestamps[0])
         if isinstance(value, int):
             names.append('⦁ ' + name + ': {:}'.format(value))
         else:
@@ -123,7 +123,7 @@ def plot_parameter_changes(p, plots_height, changed_parameters):
     return None
 
 
-def plot_flight_modes_background(data_plot, flight_mode_changes, vtol_states=None):
+def plot_flight_modes_background(ulog, data_plot, flight_mode_changes, vtol_states=None):
     """ plot flight modes as filling background (with different colors) to a
     DataPlot object """
     vtol_state_height = 40
@@ -144,6 +144,8 @@ def plot_flight_modes_background(data_plot, flight_mode_changes, vtol_states=Non
     for i in range(len(flight_mode_changes)-1):
         t_start, mode = flight_mode_changes[i]
         t_end, mode_next = flight_mode_changes[i + 1]
+        t_start = t_start - ulog.start_timestamp
+        t_end = t_end - ulog.start_timestamp
         if mode in flight_modes_table:
             mode_name, color = flight_modes_table[mode]
             annotation = BoxAnnotation(left=int(t_start), right=int(t_end),
@@ -215,6 +217,7 @@ def plot_set_equal_aspect_ratio(p, x, y, zoom_out_factor=1.3, min_range=5):
     The plot size must already have been set before calling this.
     """
     x_range = [np.amin(x), np.amax(x)]
+    x_range = [0,100]
     x_diff = x_range[1]-x_range[0]
     if x_diff < min_range: x_diff = min_range
     x_center = (x_range[0]+x_range[1])/2
@@ -524,7 +527,7 @@ class DataPlot:
         try:
             p = self._p
             data_set = {}
-            data_set['timestamp'] = self._cur_dataset.data['timestamp']
+            data_set['timestamp'] = self._cur_dataset.data['timestamp'] - min(self._cur_dataset.data['timestamp'])
             field_names_expanded = self._expand_field_names(field_names, data_set)
 
             if mark_nan:
@@ -588,7 +591,7 @@ class DataPlot:
         try:
             p = self._p
             data_set = {}
-            data_set['timestamp'] = self._cur_dataset.data['timestamp']
+            data_set['timestamp'] = self._cur_dataset.data['timestamp'] - min(self._cur_dataset.data['timestamp'])
             field_names_expanded = self._expand_field_names(field_names, data_set)
             data_source = ColumnDataSource(data=data_set)
 
@@ -815,7 +818,7 @@ class DataPlotSpec(DataPlot):
         if self._had_error: return
         try:
             data_set = {}
-            data_set['timestamp'] = self._cur_dataset.data['timestamp']
+            data_set['timestamp'] = self._cur_dataset.data['timestamp'] - min(self._cur_dataset.data['timestamp'])
 
             # calculate the sampling frequency
             # (Note: logging dropouts are not taken into account here)
@@ -915,7 +918,7 @@ class DataPlotFFT(DataPlot):
         if self._had_error: return
         try:
             data_set = {}
-            data_set['timestamp'] = self._cur_dataset.data['timestamp']
+            data_set['timestamp'] = self._cur_dataset.data['timestamp'] - min(self._cur_dataset.data['timestamp'])
             data_len = len(data_set['timestamp'])
 
             # calculate the sampling frequency

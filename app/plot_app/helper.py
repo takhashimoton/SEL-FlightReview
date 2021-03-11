@@ -293,7 +293,7 @@ def load_ulog_file(file_name):
     # (re)loaded on each page request. Thus the caching would not work there.
 
     # load only the messages we really need
-    msg_filter = ['battery_status', 'distance_sensor', 'estimator_status',
+    msg_filter = ['battery_status', 'battery_switch','distance_sensor', 'estimator_status',
                   'sensor_combined', 'cpuload',
                   'vehicle_gps_position', 'vehicle_local_position',
                   'vehicle_local_position_setpoint',
