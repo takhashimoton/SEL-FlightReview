@@ -1,10 +1,12 @@
 version: "3.3"
 services:
+  # nginx:
+  #   image: nginx
   srv:
-    image: px4flightreview
+    # image: px4flightreview
     build:
-      context: ../
-      dockerfile: ./docker/Dockerfile
+      context: ./app
+      dockerfile: Dockerfile
     restart: always
     network_mode: bridge
     ports:
