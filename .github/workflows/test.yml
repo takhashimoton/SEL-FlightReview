@@ -27,7 +27,7 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt install -y sqlite3 fftw3 libfftw3-dev
-          pip install -r requirements.txt
+          pip install -r app/requirements.txt
       - name : Running Tests
         run: |
           ./run_pylint.sh
