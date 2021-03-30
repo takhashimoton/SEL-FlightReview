@@ -457,6 +457,7 @@ class DataPlot:
                 # make sure y axis starts at y_start. We do it by adding an invisible circle
                 self._p.circle(x=int(self._cur_dataset.data['timestamp'][0]),
                                y=y_start, size=0, alpha=0)
+            self._min_timestamp = self._cur_dataset.data['timestamp'][0]
 
         except (KeyError, IndexError, ValueError) as error:
             print(type(error), "("+self._data_name+"):", error)
@@ -511,6 +512,225 @@ class DataPlot:
             self._had_error = True
             self._cur_dataset = None
 
+    def add_graph_gpsalt(self, field_names, colors, legends, use_downsample=True,
+                  mark_nan=False, use_step_lines=False):
+        """ add 1 or more lines to a graph
+
+        field_names can be a list of fields from the data set, or a list of
+        functions with the data set as argument and returning a tuple of
+        (field_name, data)
+        :param mark_nan: if True, add an indicator to the plot when one of the graphs is NaN
+        :param use_step_lines: if True, render step lines (after each point)
+        instead of rendering a straight line to the next point
+        """
+        if self._had_error: return
+        try:
+            p = self._p
+            data_set = {}
+            data_set['timestamp'] = self._cur_dataset.data['timestamp'] - self._min_timestamp
+            field_names_expanded = self._expand_field_names(field_names, data_set)
+
+            data_set['alt'] = (self._cur_dataset.data['alt'] - self._cur_dataset.data['alt'][0]) * 0.001
+
+            if mark_nan:
+                # look through the data to find NaN's and store their timestamps
+                nan_timestamps = set()
+                for key in field_names_expanded:
+                    nan_indexes = np.argwhere(np.isnan(data_set[key]))
+                    last_index = -2
+                    for ind in nan_indexes:
+                        if last_index + 1 != ind: # store only timestamps at the start of NaN
+                            nan_timestamps.add(data_set['timestamp'][ind][0])
+                        last_index = ind
+
+                nan_color = 'black'
+                for nan_timestamp in nan_timestamps:
+                    nan_line = Span(location=nan_timestamp,
+                                    dimension='height', line_color=nan_color,
+                                    line_dash='dashed', line_width=2)
+                    p.add_layout(nan_line)
+                if len(nan_timestamps) > 0:
+                    y_values = [30] * len(nan_timestamps)
+                    # NaN label: add a space to separate it from the line
+                    names = [' NaN'] * len(nan_timestamps)
+                    source = ColumnDataSource(data=dict(x=np.array(list(nan_timestamps)),
+                                                        names=names, y=y_values))
+                    # plot as text with a fixed screen-space y offset
+                    labels = LabelSet(x='x', y='y', text='names',
+                                      y_units='screen', level='glyph', text_color=nan_color,
+                                      source=source, render_mode='canvas')
+                    p.add_layout(labels)
+
+
+            if use_downsample:
+                # we directly pass the data_set, downsample and then create the
+                # ColumnDataSource object, which is much faster than
+                # first creating ColumnDataSource, and then downsample
+                downsample = DynamicDownsample(p, data_set, 'timestamp')
+                data_source = downsample.data_source
+            else:
+                data_source = ColumnDataSource(data=data_set)
+
+            for field_name, color, legend in zip(field_names_expanded, colors, legends):
+                if use_step_lines:
+                    p.step(x='timestamp', y=field_name, source=data_source,
+                           legend_label=legend, line_width=2, line_color=color,
+                           mode="after")
+                else:
+                    p.line(x='timestamp', y=field_name, source=data_source,
+                           legend_label=legend, line_width=2, line_color=color)
+
+        except (KeyError, IndexError, ValueError) as error:
+            print(type(error), "("+self._data_name+"):", error)
+            self._had_error = True
+
+
+    def add_graph_alt(self, field_names, colors, legends, use_downsample=True,
+                  mark_nan=False, use_step_lines=False):
+        """ add 1 or more lines to a graph
+
+        field_names can be a list of fields from the data set, or a list of
+        functions with the data set as argument and returning a tuple of
+        (field_name, data)
+        :param mark_nan: if True, add an indicator to the plot when one of the graphs is NaN
+        :param use_step_lines: if True, render step lines (after each point)
+        instead of rendering a straight line to the next point
+        """
+        if self._had_error: return
+        try:
+            p = self._p
+            data_set = {}
+            data_set['timestamp'] = self._cur_dataset.data['timestamp'] - self._min_timestamp
+            field_names_expanded = self._expand_field_names(field_names, data_set)
+
+            data_set['alt'] = self._cur_dataset.data['alt'] - self._cur_dataset.data['alt'][0]
+
+            if mark_nan:
+                # look through the data to find NaN's and store their timestamps
+                nan_timestamps = set()
+                for key in field_names_expanded:
+                    nan_indexes = np.argwhere(np.isnan(data_set[key]))
+                    last_index = -2
+                    for ind in nan_indexes:
+                        if last_index + 1 != ind: # store only timestamps at the start of NaN
+                            nan_timestamps.add(data_set['timestamp'][ind][0])
+                        last_index = ind
+
+                nan_color = 'black'
+                for nan_timestamp in nan_timestamps:
+                    nan_line = Span(location=nan_timestamp,
+                                    dimension='height', line_color=nan_color,
+                                    line_dash='dashed', line_width=2)
+                    p.add_layout(nan_line)
+                if len(nan_timestamps) > 0:
+                    y_values = [30] * len(nan_timestamps)
+                    # NaN label: add a space to separate it from the line
+                    names = [' NaN'] * len(nan_timestamps)
+                    source = ColumnDataSource(data=dict(x=np.array(list(nan_timestamps)),
+                                                        names=names, y=y_values))
+                    # plot as text with a fixed screen-space y offset
+                    labels = LabelSet(x='x', y='y', text='names',
+                                      y_units='screen', level='glyph', text_color=nan_color,
+                                      source=source, render_mode='canvas')
+                    p.add_layout(labels)
+
+
+            if use_downsample:
+                # we directly pass the data_set, downsample and then create the
+                # ColumnDataSource object, which is much faster than
+                # first creating ColumnDataSource, and then downsample
+                downsample = DynamicDownsample(p, data_set, 'timestamp')
+                data_source = downsample.data_source
+            else:
+                data_source = ColumnDataSource(data=data_set)
+
+            for field_name, color, legend in zip(field_names_expanded, colors, legends):
+                if use_step_lines:
+                    p.step(x='timestamp', y=field_name, source=data_source,
+                           legend_label=legend, line_width=2, line_color=color,
+                           mode="after")
+                else:
+                    p.line(x='timestamp', y=field_name, source=data_source,
+                           legend_label=legend, line_width=2, line_color=color)
+
+        except (KeyError, IndexError, ValueError) as error:
+            print(type(error), "("+self._data_name+"):", error)
+            self._had_error = True
+
+
+
+    def add_graph_baro(self, field_names, colors, legends, use_downsample=True,
+                  mark_nan=False, use_step_lines=False):
+        """ add 1 or more lines to a graph
+
+        field_names can be a list of fields from the data set, or a list of
+        functions with the data set as argument and returning a tuple of
+        (field_name, data)
+        :param mark_nan: if True, add an indicator to the plot when one of the graphs is NaN
+        :param use_step_lines: if True, render step lines (after each point)
+        instead of rendering a straight line to the next point
+        """
+        if self._had_error: return
+        try:
+            p = self._p
+            data_set = {}
+            data_set['timestamp'] = self._cur_dataset.data['timestamp'] - self._min_timestamp
+            field_names_expanded = self._expand_field_names(field_names, data_set)
+
+            data_set['baro_alt_meter'] = self._cur_dataset.data['baro_alt_meter'] - self._cur_dataset.data['baro_alt_meter'][0]
+
+            if mark_nan:
+                # look through the data to find NaN's and store their timestamps
+                nan_timestamps = set()
+                for key in field_names_expanded:
+                    nan_indexes = np.argwhere(np.isnan(data_set[key]))
+                    last_index = -2
+                    for ind in nan_indexes:
+                        if last_index + 1 != ind: # store only timestamps at the start of NaN
+                            nan_timestamps.add(data_set['timestamp'][ind][0])
+                        last_index = ind
+
+                nan_color = 'black'
+                for nan_timestamp in nan_timestamps:
+                    nan_line = Span(location=nan_timestamp,
+                                    dimension='height', line_color=nan_color,
+                                    line_dash='dashed', line_width=2)
+                    p.add_layout(nan_line)
+                if len(nan_timestamps) > 0:
+                    y_values = [30] * len(nan_timestamps)
+                    # NaN label: add a space to separate it from the line
+                    names = [' NaN'] * len(nan_timestamps)
+                    source = ColumnDataSource(data=dict(x=np.array(list(nan_timestamps)),
+                                                        names=names, y=y_values))
+                    # plot as text with a fixed screen-space y offset
+                    labels = LabelSet(x='x', y='y', text='names',
+                                      y_units='screen', level='glyph', text_color=nan_color,
+                                      source=source, render_mode='canvas')
+                    p.add_layout(labels)
+
+
+            if use_downsample:
+                # we directly pass the data_set, downsample and then create the
+                # ColumnDataSource object, which is much faster than
+                # first creating ColumnDataSource, and then downsample
+                downsample = DynamicDownsample(p, data_set, 'timestamp')
+                data_source = downsample.data_source
+            else:
+                data_source = ColumnDataSource(data=data_set)
+
+            for field_name, color, legend in zip(field_names_expanded, colors, legends):
+                if use_step_lines:
+                    p.step(x='timestamp', y=field_name, source=data_source,
+                           legend_label=legend, line_width=2, line_color=color,
+                           mode="after")
+                else:
+                    p.line(x='timestamp', y=field_name, source=data_source,
+                           legend_label=legend, line_width=2, line_color=color)
+
+        except (KeyError, IndexError, ValueError) as error:
+            print(type(error), "("+self._data_name+"):", error)
+            self._had_error = True
+
 
     def add_graph(self, field_names, colors, legends, use_downsample=True,
                   mark_nan=False, use_step_lines=False):
@@ -527,7 +747,7 @@ class DataPlot:
         try:
             p = self._p
             data_set = {}
-            data_set['timestamp'] = self._cur_dataset.data['timestamp'] - min(self._cur_dataset.data['timestamp'])
+            data_set['timestamp'] = self._cur_dataset.data['timestamp'] - self._min_timestamp
             field_names_expanded = self._expand_field_names(field_names, data_set)
 
             if mark_nan:
@@ -591,8 +811,31 @@ class DataPlot:
         try:
             p = self._p
             data_set = {}
-            data_set['timestamp'] = self._cur_dataset.data['timestamp'] - min(self._cur_dataset.data['timestamp'])
+            data_set['timestamp'] = self._cur_dataset.data['timestamp'] - self._min_timestamp
             field_names_expanded = self._expand_field_names(field_names, data_set)
+            data_source = ColumnDataSource(data=data_set)
+
+            for field_name, color, legend in zip(field_names_expanded, colors, legends):
+                p.circle(x='timestamp', y=field_name, source=data_source,
+                         legend_label=legend, line_width=2, size=4, line_color=color,
+                         fill_color=None)
+
+        except (KeyError, IndexError, ValueError) as error:
+            print(type(error), "("+self._data_name+"):", error)
+            self._had_error = True
+
+    def add_circle_alt(self, field_names, colors, legends):
+        """ add circles
+
+        see add_graph for arguments description
+        """
+        if self._had_error: return
+        try:
+            p = self._p
+            data_set = {}
+            data_set['timestamp'] = self._cur_dataset.data['timestamp'] - self._min_timestamp
+            field_names_expanded = self._expand_field_names(field_names, data_set)
+            data_set['current.alt'] = self._cur_dataset.data['current.alt'] - self._cur_dataset.data['current.alt'][0]
             data_source = ColumnDataSource(data=data_set)
 
             for field_name, color, legend in zip(field_names_expanded, colors, legends):
@@ -818,7 +1061,7 @@ class DataPlotSpec(DataPlot):
         if self._had_error: return
         try:
             data_set = {}
-            data_set['timestamp'] = self._cur_dataset.data['timestamp'] - min(self._cur_dataset.data['timestamp'])
+            data_set['timestamp'] = self._cur_dataset.data['timestamp'] - self._cur_dataset.data['timestamp'][0]
 
             # calculate the sampling frequency
             # (Note: logging dropouts are not taken into account here)
@@ -850,7 +1093,7 @@ class DataPlotSpec(DataPlot):
 
             # offset = int(((1024/2.0)/250.0)*1e6)
             # scale time to microseconds and add start time as offset
-            time = time * 1.0e6 + self._cur_dataset.data['timestamp'][0]
+            time = time * 1.0e6
 
             color_mapper = LinearColorMapper(palette=viridis(256), low=-80, high=0)
 
@@ -918,7 +1161,7 @@ class DataPlotFFT(DataPlot):
         if self._had_error: return
         try:
             data_set = {}
-            data_set['timestamp'] = self._cur_dataset.data['timestamp'] - min(self._cur_dataset.data['timestamp'])
+            data_set['timestamp'] = self._cur_dataset.data['timestamp'] - self._min_timestamp
             data_len = len(data_set['timestamp'])
 
             # calculate the sampling frequency

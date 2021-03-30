@@ -164,14 +164,16 @@ def generate_plots(ulog, px4_ulog, db_data, vehicle_data, link_to_3d_page,
     data_plot = DataPlot(data, plot_config, 'vehicle_gps_position',
                          y_axis_label='[m]', title='Altitude Estimate',
                          changed_params=changed_params, x_range=x_range)
-    data_plot.add_graph([lambda data: ('alt', data['alt']*0.001)],
+    data_plot.add_graph_gpsalt([lambda data: ('alt', data['alt']*0.001)],
                         colors8[0:1], ['GPS Altitude'])
     data_plot.change_dataset(baro_alt_meter_topic)
-    data_plot.add_graph(['baro_alt_meter'], colors8[1:2], ['Barometer Altitude'])
+    data_plot.add_graph_baro(['baro_alt_meter'], colors8[1:2], ['Barometer Altitude'])
     data_plot.change_dataset('vehicle_global_position')
-    data_plot.add_graph(['alt'], colors8[2:3], ['Fused Altitude Estimation'])
+    data_plot.add_graph_alt(['alt'], colors8[2:3], ['Fused Altitude Estimation'])
+    data_plot.change_dataset('distance_sensor')
+    data_plot.add_graph(['current_distance'], colors8[7:8], ['Distance Sensor'])
     data_plot.change_dataset('position_setpoint_triplet')
-    data_plot.add_circle(['current.alt'], [plot_config['mission_setpoint_color']],
+    data_plot.add_circle_alt(['current.alt'], [plot_config['mission_setpoint_color']],
                          ['Altitude Setpoint'])
     data_plot.change_dataset('actuator_controls_0')
     data_plot.add_graph([lambda data: ('thrust', data['control[3]']*100)],
@@ -375,9 +377,10 @@ def generate_plots(ulog, px4_ulog, db_data, vehicle_data, link_to_3d_page,
         pass
 
     # TECS (fixed-wing or VTOLs)
-    data_plot = DataPlot(data, plot_config, 'tecs_status', y_start=0, title='TECS',
+    data_plot = DataPlot(data, plot_config, 'vehicle_global_position', y_start=0, title='TECS',
                          y_axis_label='[m/s]', plot_height='small',
                          changed_params=changed_params, x_range=x_range)
+    data_plot.change_dataset('tecs_status')
     data_plot.add_graph(['height_rate', 'height_rate_setpoint'],
                         colors2, ['Height Rate', 'Height Rate Setpoint'],
                         mark_nan=True)
